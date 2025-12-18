@@ -1,0 +1,43 @@
+from fastapi import FastAPI, Form, Request
+from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.templating import Jinja2Templates
+import pandas as pd
+import uuid
+import os
+
+app = FastAPI()
+templates = Jinja2Templates(directory="templates")
+
+os.makedirs("output", exist_ok=True)
+
+@app.get("/", response_class=HTMLResponse)
+def home(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+
+
+@app.post("/generate")
+def generate(
+    sport_name: str = Form(...),
+    match_duration: int = Form(...),
+    num_teams: int = Form(...),
+    players_per_team: int = Form(...)
+):
+    # Sample Excel data (we’ll expand later)
+    df = pd.DataFrame({
+        "Sport": [sport_name],
+        "Match Duration (min)": [match_duration],
+        "Teams": [num_teams],
+        "Players per Team": [players_per_team]
+    })
+
+    filename = f"tournament_{uuid.uuid4()}.xlsx"
+    filepath = f"output/{filename}"
+
+    with pd.ExcelWriter(filepath, engine="openpyxl") as writer:
+        df.to_excel(writer, sheet_name="Summary", index=False)
+
+    return FileResponse(
+        filepath,
+        filename="Tournament.xlsx",
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
