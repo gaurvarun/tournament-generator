@@ -22,8 +22,37 @@ def generate(
     num_teams: int = Form(...),
     players_per_team: int = Form(...)
 ):
-    # Sample Excel data (we’ll expand later)
-    df = pd.DataFrame({
+    # -----------------------------
+    # VALIDATION — Sport Config
+    # -----------------------------
+    if not sport_name.strip():
+        return {"error": "Sport name cannot be empty"}
+
+    if match_duration <= 0:
+        return {"error": "Match duration must be greater than 0"}
+
+    # -----------------------------
+    # CONFIG SHEET
+    # -----------------------------
+    df_config = pd.DataFrame({
+        "Parameter": [
+            "Sport Name",
+            "Match Duration (minutes)",
+            "Number of Teams",
+            "Players per Team"
+        ],
+        "Value": [
+            sport_name,
+            match_duration,
+            num_teams,
+            players_per_team
+        ]
+    })
+
+    # -----------------------------
+    # EXISTING SUMMARY SHEET
+    # -----------------------------
+    df_summary = pd.DataFrame({
         "Sport": [sport_name],
         "Match Duration (min)": [match_duration],
         "Teams": [num_teams],
@@ -34,7 +63,8 @@ def generate(
     filepath = f"output/{filename}"
 
     with pd.ExcelWriter(filepath, engine="openpyxl") as writer:
-        df.to_excel(writer, sheet_name="Summary", index=False)
+        df_config.to_excel(writer, sheet_name="Config", index=False)
+        df_summary.to_excel(writer, sheet_name="Summary", index=False)
 
     return FileResponse(
         filepath,
